@@ -1,0 +1,23 @@
+{
+  "name": "@jo51yon/claudia-table",
+  "version": "1.0.0",
+  "description": "Claudia shared data table (ClaudiaTable) -- paginated, sortable, filterable, searchable, CSV-exportable. Dual mode (server/client) via config, extracted from Lintel's real DataTable.jsx. See docs/_platform/component-library.md in the claudia repo.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist", "src"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0"
+  }
+}
