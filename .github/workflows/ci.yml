@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        run: npm install
+      - name: Type-check + build
+        run: npx tsc -p tsconfig.json
+      - name: Verify dist output exists and is non-empty
+        run: |
+          test -f dist/index.js || (echo "::error::dist/index.js was not produced" && exit 1)
+          test -f dist/index.d.ts || (echo "::error::dist/index.d.ts was not produced" && exit 1)
+      - name: Check for breaking export changes
+        run: node scripts/check-breaking-exports.mjs
