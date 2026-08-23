@@ -36,12 +36,42 @@ export type ClaudiaTableProps<T> = {
   rowKey: (row: T) => string;
   /** Bumping this value re-fetches/re-derives the current page -- same purpose as a refresh button. */
   refreshToken?: unknown;
+  copy?: Partial<ClaudiaTableCopy>;
 } & (
   | { mode: 'server'; fetchPage: FetchPage<T> }
   | { mode: 'client'; rows: T[]; searchColumns?: (keyof T)[] }
 );
 
 const PAGE_SIZES = [10, 25, 50, 100];
+
+/**
+ * Added 2026-08-20. Every user-facing string this component owns, English defaults -- real
+ * gap found in a systematic config audit: 8 strings, including one dynamically-formatted
+ * one (the "1-25 of 140" range), were hardcoded with no override path.
+ */
+export interface ClaudiaTableCopy {
+  searchPlaceholder: string;
+  exportButton: string;
+  loading: string;
+  noRows: string;
+  noMatches: string;
+  perPageSuffix: string; // rendered as "{n} {perPageSuffix}"
+  previousButton: string;
+  nextButton: string;
+  /** Given (from, to, total) -- default renders "1-25 of 140". */
+  rangeSummary: (from: number, to: number, total: number) => string;
+}
+const DEFAULT_COPY: ClaudiaTableCopy = {
+  searchPlaceholder: 'Search',
+  exportButton: 'Export CSV',
+  loading: 'Loading\u2026',
+  noRows: 'No rows',
+  noMatches: 'Nothing matches that. Clear the search or filters to see everything.',
+  perPageSuffix: 'per page',
+  previousButton: 'Previous',
+  nextButton: 'Next',
+  rangeSummary: (from, to, total) => `${from}\u2013${to} of ${total}`,
+};
 
 function readUrlState(key: string): Record<string, unknown> {
   const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
@@ -69,7 +99,8 @@ function toCsv<T>(rows: T[], columns: ClaudiaColumn<T>[]): string {
 }
 
 export default function ClaudiaTable<T>(props: ClaudiaTableProps<T>) {
-  const { columns, searchable = false, filters = [], defaultSort, urlKey, emptyMessage = 'Nothing here yet.', canExport = false, csvName = 'export', rowKey, refreshToken } = props;
+  const { columns, searchable = false, filters = [], defaultSort, urlKey, emptyMessage = 'Nothing here yet.', canExport = false, csvName = 'export', rowKey, refreshToken, copy: copyProp } = props;
+  const copy = { ...DEFAULT_COPY, ...copyProp };
 
   const saved = useMemo(() => (urlKey ? readUrlState(urlKey) : {}), [urlKey]);
   const [page, setPage] = useState((saved.page as number) ?? 0);
@@ -153,7 +184,7 @@ export default function ClaudiaTable<T>(props: ClaudiaTableProps<T>) {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 14 }}>
           {searchable && (
             <input className="field" style={{ flex: '1 1 220px', maxWidth: 320 }} type="search"
-              placeholder="Search" value={search}
+              placeholder={copy.searchPlaceholder} value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(0); }} />
           )}
           {filters.map((f) => (
@@ -164,19 +195,19 @@ export default function ClaudiaTable<T>(props: ClaudiaTableProps<T>) {
             </select>
           ))}
           {canExport && rows && rows.length > 0 && (
-            <button className="btn quiet" onClick={exportCsv}>Export CSV</button>
+            <button className="btn quiet" onClick={exportCsv}>{copy.exportButton}</button>
           )}
         </div>
       )}
 
       {error && <p className="err" style={{ fontSize: '.85rem' }}>{error}</p>}
-      {rows === null && <p className="dim" style={{ fontSize: '.85rem' }}>Loading\u2026</p>}
+      {rows === null && <p className="dim" style={{ fontSize: '.85rem' }}>{copy.loading}</p>}
 
       {rows?.length === 0 && (
         <div className="card" style={{ padding: 22 }}>
           <p className="dim" style={{ fontSize: '.85rem', margin: 0 }}>
             {search || Object.values(active).some(Boolean)
-              ? 'Nothing matches that. Clear the search or filters to see everything.'
+              ? copy.noMatches
               : emptyMessage}
           </p>
         </div>
@@ -215,15 +246,15 @@ export default function ClaudiaTable<T>(props: ClaudiaTableProps<T>) {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
             <span className="dim" style={{ fontSize: '.82rem' }}>
-              {total === 0 ? 'No rows' : `${page * pageSize + 1}\u2013${Math.min((page + 1) * pageSize, total)} of ${total}`}
+              {total === 0 ? copy.noRows : copy.rangeSummary(page * pageSize + 1, Math.min((page + 1) * pageSize, total), total)}
             </span>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <select className="field" style={{ width: 'auto' }} value={pageSize}
                 onChange={(e) => { setPageSize(Number(e.target.value)); setPage(0); }}>
-                {PAGE_SIZES.map((n) => <option key={n} value={n}>{n} per page</option>)}
+                {PAGE_SIZES.map((n) => <option key={n} value={n}>{n} {copy.perPageSuffix}</option>)}
               </select>
-              <button className="btn quiet" disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</button>
-              <button className="btn quiet" disabled={page >= lastPage} onClick={() => setPage(page + 1)}>Next</button>
+              <button className="btn quiet" disabled={page === 0} onClick={() => setPage(page - 1)}>{copy.previousButton}</button>
+              <button className="btn quiet" disabled={page >= lastPage} onClick={() => setPage(page + 1)}>{copy.nextButton}</button>
             </div>
           </div>
         </>
