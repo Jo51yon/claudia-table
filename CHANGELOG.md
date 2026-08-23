@@ -4,6 +4,13 @@ Semantic versioning: MAJOR = a prop, exported type, or default behaviour changed
 could break an existing consumer without any code change on their side. MINOR = additive only.
 Consuming projects should pin to a tag (`#v1.0.0`), never `#main`.
 
+## v1.2.0 — 2026-08-23
+
+Additive. Adds `onRowClick`. Real gap found while building a real consumer
+(@jo51yon/claudia-knowledge's article triage view): no way to make a row itself clickable,
+forcing a redundant button list next to the table. Every existing consumer unaffected --
+omitting it renders identically to before.
+
 ## v1.1.0 — 2026-08-20
 
 Additive. Adds `copy` -- 8 previously hardcoded strings now overridable, including

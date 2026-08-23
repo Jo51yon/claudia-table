@@ -34,6 +34,12 @@ export type ClaudiaTableProps<T> = {
   canExport?: boolean;
   csvName?: string;
   rowKey: (row: T) => string;
+  /**
+   * Added 2026-08-23. Real gap found while building a real consumer (a knowledge-article
+   * triage view): no way to make a row itself clickable, forcing a redundant button list next
+   * to the table. Omit for the current, unchanged behaviour (plain rows).
+   */
+  onRowClick?: (row: T) => void;
   /** Bumping this value re-fetches/re-derives the current page -- same purpose as a refresh button. */
   refreshToken?: unknown;
   copy?: Partial<ClaudiaTableCopy>;
@@ -99,7 +105,7 @@ function toCsv<T>(rows: T[], columns: ClaudiaColumn<T>[]): string {
 }
 
 export default function ClaudiaTable<T>(props: ClaudiaTableProps<T>) {
-  const { columns, searchable = false, filters = [], defaultSort, urlKey, emptyMessage = 'Nothing here yet.', canExport = false, csvName = 'export', rowKey, refreshToken, copy: copyProp } = props;
+  const { columns, searchable = false, filters = [], defaultSort, urlKey, emptyMessage = 'Nothing here yet.', canExport = false, csvName = 'export', rowKey, refreshToken, copy: copyProp, onRowClick } = props;
   const copy = { ...DEFAULT_COPY, ...copyProp };
 
   const saved = useMemo(() => (urlKey ? readUrlState(urlKey) : {}), [urlKey]);
@@ -232,7 +238,8 @@ export default function ClaudiaTable<T>(props: ClaudiaTableProps<T>) {
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={rowKey(r)}>
+                  <tr key={rowKey(r)} onClick={onRowClick ? () => onRowClick(r) : undefined}
+                      style={onRowClick ? { cursor: 'pointer' } : undefined}>
                     {columns.map((c) => (
                       <td key={c.key} style={{ textAlign: c.type === 'money' ? 'right' : undefined }} data-label={c.label}>
                         {c.render ? c.render(r) : String((r as Record<string, unknown>)[c.key] ?? '\u2014')}
